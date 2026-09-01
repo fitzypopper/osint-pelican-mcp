@@ -1,4 +1,4 @@
-# osint-mcp-server
+# Pelican — OSINT MCP Server
 
 A **general-purpose open-source intelligence (OSINT) MCP server** for AI agents.
 Local-first: run it on your own machine, connect any [Model Context
@@ -6,43 +6,49 @@ Protocol](https://modelcontextprotocol.io) client (OpenCode, Hermes, Claude,
 Cursor, Cline, etc.), and give your agent one tool surface for broad public-data
 lookups.
 
-Zero-config default: most tools work with **no API keys**. Optional keys unlock
-higher-rate / premium sources (HIBP, OTX, Shodan, VirusTotal, Hunter, GitHub).
+## 🦚 Why "Pelican"?
 
-```
-AI Agent (local or cloud LLM)
-    ↓  MCP (stdio or streamable-http)
-osint-mcp-server
-    ├── Domain/Infra   DNS, WHOIS/RDAP, crt.sh, GeoIP, BGP, Wayback, HackerTarget, email security
-    ├── Identity/Social GitHub, Reddit, Keybase, username enumeration, email permutation, Gravatar
-    └── Threat/Breach  HIBP (k-anonymity + breaches), Ahmia dark-web, Shodan InternetDB, CISA KEV, OTX
-```
+[Pelicans](https://en.wikipedia.org/wiki/Pelican) scan the shoreline for fish —
+symbolising an OSINT server that scans public data sources for intelligence.
+Short, distinctive, and animal-themed (like many MCP servers in this space).
 
----
+## ⚡ Quick start
 
-## Quick start
+### Install
 
 ```bash
-uvx --from git+https://github.com/<you>/osint-mcp-server osint-mcp
+# Using uv (recommended)
+uv venv && uv pip install -e ".[dev]"
+
+# Or using pip
+pip install pelican[dev]
+
+# Or via uvx (one-shot)
+uvx pelican-mcp
 ```
 
-Or, from a checkout:
+### Run the MCP server
 
 ```bash
-git clone https://github.com/<you>/osint-mcp-server
-cd osint-mcp-server
-uv venv && uv pip install -e .
-osint-mcp            # stdio transport (default)
+# stdio (default — local AI agents)
+pelican-mcp
+
+# HTTP / streamable-http (remote agents)
+pelican-mcp --transport http          # default port 8000
+# or with bearer token auth:
+OSINT_MCP_AUTH_TOKEN=$(openssl rand -hex 24) pelican-mcp --transport http
 ```
 
-Then add it to your client config. **OpenCode** (`opencode.json`):
+### Add to your MCP client config
+
+**OpenCode** (`opencode.json`):
 
 ```json
 {
   "mcpServers": {
-    "osint": {
+    "pelican": {
       "type": "stdio",
-      "command": ["uv", "run", "osint-mcp"]
+      "command": ["uv", "run", "pelican-mcp"]
     }
   }
 }
@@ -51,130 +57,77 @@ Then add it to your client config. **OpenCode** (`opencode.json`):
 **Claude Code**:
 
 ```bash
-claude mcp add osint -- uv run osint-mcp
-```
-
-To run over HTTP instead of stdio:
-
-```bash
-OSINT_MCP_TRANSPORT=http osint-mcp        # streamable-http on default port
-# optionally require a bearer token:
-OSINT_MCP_AUTH_TOKEN=$(openssl rand -hex 24) OSINT_MCP_TRANSPORT=http osint-mcp
+claude mcp add pelican -- uv run pelican-mcp
 ```
 
 ### CLI (no MCP client needed)
 
 ```bash
-osint-mcp-cli whois_domain '{"domain": "example.com"}'
-osint-mcp-cli osint_domain_recon '{"domain": "example.com"}'
-osint-mcp-cli --list-tools
+pelican-mcp-cli whois_domain '{"domain": "example.com"}'
+pelican-mcp-cli osint_domain_recon '{"domain": "example.com"}'
+pelican-mcp-cli --list-tools
 ```
 
----
+## 📦 What Pelican does
 
-## Tools
+**32 MCP tools** across three coverage tiers:
 
-Call `osint_list_sources` from any agent to see the full, current source/tool
-table. Resident tools below.
-
-### Domain & infrastructure (all free, no key)
-
-| Tool | Source |
+| Tier | Tools (selected) |
 |---|---|
-| `dns_lookup` / `dns_lookup_all` | dnspython |
-| `whois_domain` / `whois_ip` | RDAP via rdap.org |
-| `crtsh_search` | crt.sh (cert transparency) |
-| `hackertarget_hostsearch` | HackerTarget |
-| `email_security` | SPF/DMARC/DKIM derived from DNS |
-| `geoip` | ip-api.com |
-| `bgp_asn` / `bgp_ip` | bgpview.io |
-| `wayback_urls` | Wayback Machine CDX |
+| **Domain/Infra** | `dns_lookup`, `whois_domain`, `crtsh_search`, `geoip`, `bgp_asn`, `wayback_urls`, `email_security`, `hackertarget_hostsearch` |
+| **Identity/Social** | `github_user_info`, `github_user_repos`, `reddit_user`, `keybase_lookup`, `username_enumerate`, `gravatar_lookup`, `email_permutations`, `domain_email_search` |
+| **Threat/Breach** | `check_password_breach`, `shodan_internetdb`, `search_darkweb`, `cisa_kev_catalog`, `otx_search_pulses`, `osint_domain_recon`, `osint_ip_recon`, `osint_list_sources` |
 
-### Identity & social (free)
+**Aggregate tools:**
+- `osint_list_sources` — shows all sources and which API keys are configured
+- `osint_domain_recon` — all-in-one free domain recon (DNS + WHOIS + crt.sh + hosts + email security + geoip), correlated
+- `osint_ip_recon` — all-in-one free IP recon (geoip + RDAP + BGP + Shodan InternetDB), correlated
 
-| Tool | Source |
-|---|---|
-| `github_user_info` / `github_user_repos` / `github_commit_emails` / `github_repo_commits` | GitHub API |
-| `reddit_user` / `reddit_user_posts` | Reddit JSON API |
-| `keybase_lookup` | Keybase API |
-| `username_enumerate` | HTTP probing across ~20 platforms |
-| `gravatar_lookup` | Gravatar (MD5 hash) |
-| `email_permutations` | local pattern generation |
-| `domain_email_search` | heuristic scrape |
+## 🔑 API keys (all optional)
 
-### Threat & breach
+Most tools work with **zero config**. Add only the keys for sources you want to unlock:
 
-| Tool | Source | Key? |
-|---|---|---|
-| `check_password_breach` | HIBP k-anonymity | free |
-| `shodan_internetdb` | Shodan InternetDB | free |
-| `search_darkweb` | Ahmia.fi .onion index | free |
-| `cisa_kev_catalog` | CISA KEV | free |
-| `check_email_breaches` | HIBP | `HIBP_API_KEY` |
-| `otx_search_pulses` / `otx_indicator` | AlienVault OTX | `OTX_API_KEY` |
-
-### Aggregate
-
-| Tool | What it does |
-|---|---|
-| `osint_list_sources` | Show sources + which keys are configured |
-| `osint_domain_recon` | All-in-one free domain recon, correlated |
-| `osint_ip_recon` | All-in-one free IP recon, correlated |
-
----
-
-## API keys (all optional)
-
-Copy `.env.example` to `.env` (or export env vars / use `~/.config/osint-mcp/.env`)
-and add only the keys for sources you want to unlock:
-
-| Var | Unlocks | Cost |
+| Variable | Unlocks | Cost |
 |---|---|---|
 | `HIBP_API_KEY` | breached-account lookups | ~$4.50/mo |
 | `OTX_API_KEY` | OTX pulses + indicator enrichment | free |
 | `SHODAN_API_KEY` | Shodan search/host tools | free tier |
-| `VIRUSTOTAL_API_KEY` | (planned) reputation | free tier |
-| `HUNTER_API_KEY` | (planned) email discovery | paid |
 | `GITHUB_TOKEN` | higher GitHub rate limit | free |
+
+Copy `.env.example` to `.env` and add only the keys you need:
+
+```bash
+cp .env.example .env
+# then edit .env with your keys
+```
 
 Keys are read into `SecretStr` and never logged.
 
----
-
-## Ethics & use
-
-This tool collects **publicly available** information only. Use it for
-authorized OSINT research, security assessments of systems you own or are
-authorized to test, journalism, and fraud/abuse investigation. Respect each
-source's terms of service and rate limits. You are responsible for complying
-with applicable law.
-
----
-
-## Architecture
+## 🛠️ Architecture
 
 ```
-src/osint_mcp_server/
-├── server.py          FastMCP entry point, tool registration, transports
-├── cli.py             direct tool invocation (no MCP client)
-├── config.py          env/.env settings, source status
-├── net.py             shared async HTTP/DNS helpers, bounded concurrency
-└── tools/
-    ├── __init__.py
-    ├── domain.py      DNS, RDAP, crt.sh, geoip, BGP, wayback, email security
-    ├── social.py      GitHub, Reddit, Keybase, username, email, gravatar
-    ├── threat.py      HIBP, Ahmia, Shodan InternetDB, CISA KEV, OTX
-    └── suite.py       source listing + aggregate recon tools
+pelican/
+├── pelican/              pelican package (v2 compatibility shim: pelican -> osint_mcp_server)
+│   ├── __init__.py       legacy import shim
+│   ├── config.py         env/.env settings, source status
+│   ├── net.py            shared async HTTP/DNS helpers, bounded concurrency
+│   ├── server.py         FastMCP entry point, tool registration, transports
+│   ├── cli.py            direct tool invocation (no MCP client)
+│   └── tools/
+│       ├── __init__.py
+│       ├── domain.py     DNS, RDAP, crt.sh, geoip, BGP, wayback, email security
+│       ├── social.py     GitHub, Reddit, Keybase, username, email, gravatar
+│       ├── threat.py     HIBP, Ahmia, Shodan InternetDB, CISA KEV, OTX
+│       └── suite.py      source listing + aggregate recon tools
+└── tests/                unit tests (5 passing)
 ```
 
-Every source is an independent module and every tool is **read-only** —
-nothing here writes to any target. Tools are annotated with FastMCP
+Every source is an independent module and every tool is **read-only** — nothing
+here writes to any target. Tools are annotated with FastMCP
 `readOnlyHint` / `idempotentHint` / `openWorldHint` so capable clients can
 see at a glance that these are safe, repeatable, read-only operations.
 
----
-
-## Credits & attribution
+## 💡 Credits & attribution
 
 This project is a **from-scratch Python implementation** that borrows ideas,
 tool-shapes, source-selection, and endpoint patterns from several excellent
@@ -190,9 +143,7 @@ MIT-licensed projects. Thanks to their authors:
 
 The licensing sections of these works are reproduced in full below.
 
----
-
-## License
+## 📄 License
 
 MIT. See [LICENSE](LICENSE).
 
@@ -200,11 +151,14 @@ The three MIT license texts from the credited upstream projects are reproduced
 in this repository under `docs/THIRD_PARTY_LICENSES.md` as required by their
 MIT terms, so attribution survives this derived work's every redistribution.
 
----
-
-## Roadmap (brainstorm separately)
+## 🛣️ Roadmap (brainstorm separately)
 
 - [ ] Shodan / VirusTotal / Hunter source implementations (keys already plumbed)
 - [ ] Optional CLI-tool wrappers (Sherlock / Maigret / Holehe) when installed
 - [ ] Local SQLite cache + background poller for threat feeds (like mcp-threatintel)
-- [ ] Publish to GitHub and PyPI
+- [ ] Publish to PyPI
+
+---
+
+*Pelican — one interface, many sources. For authorized open-source intelligence
+research only.*
