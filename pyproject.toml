@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling>=1.30.1"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pelican"
+version = "0.1.0"
+description = "Pelican — general-purpose open-source intelligence (OSINT) MCP server for AI agents. Unified domain/DNS/IP/identity/social/breach lookups via the Model Context Protocol."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "sigge" }]
+requires-python = ">=3.11"
+keywords = ["mcp", "model-context-protocol", "osint", "open-source-intelligence", "recon", "claude", "ai-agents", "pelican"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "fastmcp>=3.4.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "dnspython>=2.6.0",
+    "python-dotenv>=1.1.0",
+    "python-whois>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15.17,<0.17",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[project.scripts]
+pelican = "pelican.server:main"
+pelican-cli = "pelican.cli:main"
+
+[project.urls]
+Repository = "https://github.com/"  # TODO: set when published
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/osint_mcp_server"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE", "/.env.example"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
