@@ -6,7 +6,7 @@ Protocol](https://modelcontextprotocol.io) client (OpenCode, Hermes, Claude,
 Cursor, Cline, etc.), and give your agent one tool surface for broad public-data
 lookups.
 
-## 🦚 Why "Pelican"?
+## 🪿 Why "Pelican"?
 
 [Pelicans](https://en.wikipedia.org/wiki/Pelican) scan the shoreline for fish —
 symbolising an OSINT server that scans public data sources for intelligence.
