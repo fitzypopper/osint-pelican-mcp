@@ -15,6 +15,6 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install uv
-      - run: uv pip install -e . --system
+      - run: uv pip install -e .[dev] --system
       - run: ruff check src tests
       - run: python -m pytest tests -q
